@@ -34,3 +34,16 @@ Run the following command providing the arguments.
 yarn start <QUANTITY> <FROM_TOKEN> <TO_TOKEN> [<HUMAN_READABLE>]
 yarn start 10 BNB DAI
 ```
+
+## Available Tokens
+
+| Token | Address                                   |
+| ----- | ------------------------------------------ |
+| ADA   | 0x3ee2200efb3400fabb9aacf31297cbdd1d435d47 |
+| BNB   | 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee |
+| BUSD  | 0xe9e7cea3dedca5984780bafc599bd69add087d56 |
+| DAI   | 0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3 |
+| ETH   | 0x2170ed0880ac9a755fd29b2688956bd959f933f8 |
+| USDC  | 0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d |
+| USDT  | 0x55d398326f99059ff775485246999027b3197955 |
+| WBNB  | 0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c |
