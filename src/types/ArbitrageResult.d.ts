@@ -1,17 +1,20 @@
+import { OneInchProtocol } from "../clients/1InchService/types/QuoteResponse";
 import Token from "../tokens";
 
-export interface ArbitrageResult extends ArbitrageValues{
+export interface ArbitrageResult{
   fromToken: Token,
   toToken: Token,
-  humanReadable?: ArbitrageHumanReadableValues
+  hasProfit: boolean,
+  poolRatio: string,
+  quoteRatio: string,
+  profitPerUnit: string,
+  protocols: OneInchProtocol[][],
 }
 
 export interface ArbitrageValues {
-  hasProfit: boolean;
-  grossProfit: string;
+  grosRatio: string;
   fee: string;
-  netProfit: string;
-  protocols: string[][],
+  netRatio: string;
 }
 
 export interface ArbitrageHumanReadableValues {
@@ -19,5 +22,3 @@ export interface ArbitrageHumanReadableValues {
   fee: string;
   netProfit: string;
 }
-
-10000.000000000000000000

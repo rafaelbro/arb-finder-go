@@ -9,14 +9,18 @@ class OneInchBinanceChainService extends OneInchBaseAPIService {
 
   public async quote(params: QuoteParams) {
     const apiPath = `${this.BASE_URL}/${this.CHAIN_CODE}/quote?`
+    try {
+      const result = await axios.get<QuoteResponse>(apiPath, { params: params })
 
-    const result = await axios.get<QuoteResponse>(apiPath, { params: params })
 
-    if(result.status !== Status.OK) {
-      throw new Error();
+      if(result.status !== Status.OK) {
+        throw new Error();
+      }
+
+      return result.data;
+    } catch(error){
+      throw new error;
     }
-
-    return result.data;
   }
 }
 

@@ -1,69 +1,63 @@
+import bigDecimal from "js-big-decimal";
 import OneInchBinanceChainService from "../clients/1InchService/OneInchBinanceChainService";
 import { QuoteResponse } from "../clients/1InchService/types/QuoteResponse";
+import { PAIRS } from "../pairs";
 import Token from "../tokens";
 import { ArbitrageHumanReadableValues, ArbitrageResult, ArbitrageValues } from "../types/ArbitrageResult";
 
+import { abi } from "../contracts/abis/test"
+import Web3Connector from "../connectors/Web3/Web3Connector";
 class CryptoArbitrageService {
   public async canArbitrate(
     amount: number,
-    token1: Token,
-    token2: Token,
-    humanReadable = false
-  ): Promise<ArbitrageResult> {
-
-    const bigIntAmount = BigInt(amount) * (10n ** 18n)
-
-    const operation1 = await OneInchBinanceChainService.quote({
-      fromTokenAddress: token1,
-      toTokenAddress: token2,
+    token0: Token,
+    token1: Token
+  ) {
+    const bigIntAmount = BigInt(amount) * (10n ** 18n);
+    const quote = await OneInchBinanceChainService.quote({
+      fromTokenAddress: token0,
+      toTokenAddress: token1,
       amount: bigIntAmount.toString()
     });
 
-    const operation2 = await OneInchBinanceChainService.quote({
-      fromTokenAddress: token2,
-      toTokenAddress: token1,
-      amount: operation1.toTokenAmount
-    });
+    const poolPair = PAIRS[token0][token1].pairPoolAddress;
+    const poolRatio = await this.getPoolRatio(poolPair);
+    const quoteRatio = await this.getQuoteRatio(quote);
 
-    const values = await this.arbitrageHasProfit([operation1, operation2]);
-
-    const result = {
-      fromToken: token1,
-      toToken: token2,
-      ...values,
-    } as ArbitrageResult;
-
-    if (humanReadable){
-      result['humanReadable'] = this.humanReadable(values);
-    }
-
-    return result;
-  }
-
-  public async arbitrageHasProfit(operations: QuoteResponse[]): Promise<ArbitrageValues> {
-    const count = operations.length;
-    const first = operations[0];
-    const last = operations[count - 1];
-    const fromToken = first.fromToken.address;
-    const grossProfit = BigInt(last.toTokenAmount) - BigInt(first.fromTokenAmount)
-
-    let protocols = [];
-    let estimatedGas = 0;
-    for(const operation of operations){
-      estimatedGas += operation.estimatedGas;
-      protocols.push(operation.protocols[0].map((protocol) => protocol.map(p => p.name )).flat());
-    }
-
-    const feeInSourceToken = await this.convertGasToToken(estimatedGas, fromToken);
-    const netProfit = grossProfit - feeInSourceToken;
+    const profitPerUnit = bigDecimal.subtract(bigDecimal.multiply(quoteRatio.netRatio, 0.997), poolRatio);
 
     return {
-      hasProfit: netProfit > 0,
-      grossProfit: grossProfit.toString(),
-      fee: feeInSourceToken.toString(),
-      netProfit: netProfit.toString(),
-      protocols: protocols,
+      fromToken: token0,
+      toToken: token1,
+      hasProfit: bigDecimal.compareTo(profitPerUnit, 0) >= 0,
+      poolRatio: poolRatio,
+      quoteRatio: quoteRatio.netRatio,
+      profitPerUnit: profitPerUnit,
+      protocols: quote.protocols[0]
+    } as ArbitrageResult;
+  }
+
+  public async getQuoteRatio(quote: QuoteResponse): Promise<ArbitrageValues> {
+    const toToken = quote.toToken.address;
+
+    const grossRatio = bigDecimal.divide(quote.fromTokenAmount, quote.toTokenAmount, 5)
+
+    let estimatedGas = quote.estimatedGas;
+
+    const feeInToToken = await this.convertGasToToken(estimatedGas, toToken);
+    const netRatio = bigDecimal.divide(bigDecimal.subtract(quote.fromTokenAmount, feeInToToken),  quote.toTokenAmount, 5)
+
+    return {
+      grosRatio: grossRatio,
+      fee: feeInToToken.toString(),
+      netRatio: netRatio,
     }
+  }
+
+  public async getPoolRatio(poolAddress: string){
+    const result = await Web3Connector.getReserves(poolAddress);
+    const poolReserveRatio = bigDecimal.divide(result.token0Reserve, result.token1Reserve, 5);
+    return poolReserveRatio;
   }
 
   public async convertGasToToken(gasAmount: number, tokenAddress: string) {
@@ -80,15 +74,6 @@ class CryptoArbitrageService {
 
     return amount;
   }
-
-  private humanReadable(values: ArbitrageValues): ArbitrageHumanReadableValues{
-    return {
-      grossProfit: (parseFloat(values.grossProfit) / 10 ** 18).toString(),
-      fee: (parseFloat(values.fee) / 10 ** 18).toString(),
-      netProfit: (parseFloat(values.netProfit) / 10 ** 18).toString()
-    }
-  }
-
 }
 
 export default new CryptoArbitrageService();

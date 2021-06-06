@@ -7,6 +7,7 @@ enum Token {
   ETH = '0x2170ed0880ac9a755fd29b2688956bd959f933f8',
   ADA = '0x3ee2200efb3400fabb9aacf31297cbdd1d435d47',
   USDT = '0x55d398326f99059ff775485246999027b3197955',
+  CAKE = '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82',
 }
 
 export default Token;
