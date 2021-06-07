@@ -2,13 +2,29 @@ import { OneInchProtocol } from "../clients/1InchService/types/QuoteResponse";
 import Token from "../tokens";
 
 export interface ArbitrageResult{
-  fromToken: Token,
-  toToken: Token,
-  hasProfit: boolean,
-  poolRatio: string,
-  quoteRatio: string,
-  profitPerUnit: string,
-  protocols: OneInchProtocol[][],
+  timestamp: string,
+  fromToken0: {
+    hasProfit: boolean,
+    poolRatio: string,
+    fromToken: Token,
+    toToken: Token,
+    quoteRatio: string,
+    loanAmount: string,
+    tradeAmount: string,
+    profit: string,
+    protocols: string,
+  },
+  fromToken1: {
+    hasProfit: boolean
+    poolRatio: string,
+    fromToken: Token,
+    toToken: Token,
+    quoteRatio: string,
+    loanAmount: string,
+    tradeAmount: string,
+    profit: string,
+    protocols: string,
+  }
 }
 
 export interface ArbitrageValues {

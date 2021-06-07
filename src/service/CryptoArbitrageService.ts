@@ -9,31 +9,65 @@ import { abi } from "../contracts/abis/test"
 import Web3Connector from "../connectors/Web3/Web3Connector";
 class CryptoArbitrageService {
   public async canArbitrate(
-    amount: number,
     token0: Token,
-    token1: Token
+    amountToken0: number,
+    token1: Token,
+    amountToken1: number,
   ) {
-    const bigIntAmount = BigInt(amount) * (10n ** 18n);
-    const quote = await OneInchBinanceChainService.quote({
+
+    const bigIntAmountToken0= BigInt(amountToken0) * (10n ** 18n);
+    const bigIntAmountToken1= BigInt(amountToken1) * (10n ** 18n);
+
+    const quoteFrom0 = await OneInchBinanceChainService.quote({
       fromTokenAddress: token0,
       toTokenAddress: token1,
-      amount: bigIntAmount.toString()
+      amount: bigIntAmountToken0.toString()
+    });
+
+    const quoteFrom1 = await OneInchBinanceChainService.quote({
+      fromTokenAddress: token1,
+      toTokenAddress: token0,
+      amount: bigIntAmountToken1.toString()
     });
 
     const poolPair = PAIRS[token0][token1].pairPoolAddress;
-    const poolRatio = await this.getPoolRatio(poolPair);
-    const quoteRatio = await this.getQuoteRatio(quote);
+    const [poolRatioFrom0, poolRatioFrom1] = await this.getPoolRatio(poolPair);
 
-    const profitPerUnit = bigDecimal.subtract(bigDecimal.multiply(quoteRatio.netRatio, 0.997), poolRatio);
+    const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
+    const grossLoanPayFrom0 = bigDecimal.add(bigDecimal.divide(amountToken0, poolRatioFrom0, 5), bigDecimal.multiply(amountToken0, 0.004));
+    const tradeAmountFrom0 = bigDecimal.divide(amountToken0, quoteFrom0Ratio.netRatio, 5);
+    const profitFrom0 = bigDecimal.subtract(tradeAmountFrom0, grossLoanPayFrom0);
+
+
+    const quoteFrom1Ratio = await this.getQuoteRatio(quoteFrom1);
+    const grossLoanPayFrom1 = bigDecimal.add(bigDecimal.divide(amountToken1, poolRatioFrom1, 5), bigDecimal.multiply(amountToken1, 0.004));
+    const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 5);
+    const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
 
     return {
-      fromToken: token0,
-      toToken: token1,
-      hasProfit: bigDecimal.compareTo(profitPerUnit, 0) >= 0,
-      poolRatio: poolRatio,
-      quoteRatio: quoteRatio.netRatio,
-      profitPerUnit: profitPerUnit,
-      protocols: quote.protocols[0]
+      timestamp: new Date().toUTCString(),
+      fromToken0: {
+        fromToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token0),
+        toToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token1),
+        poolRatio: poolRatioFrom0,
+        quoteRatio: quoteFrom0Ratio.netRatio,
+        loanAmount: grossLoanPayFrom0,
+        tradeAmount: tradeAmountFrom0,
+        profit: profitFrom0,
+        protocols: JSON.stringify(quoteFrom0.protocols),
+        hasProfit: bigDecimal.compareTo(profitFrom0, 0) >= 0,
+      },
+      fromToken1: {
+        fromToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token1),
+        toToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token0),
+        poolRatio: poolRatioFrom1,
+        quoteRatio: quoteFrom1Ratio.netRatio,
+        loanAmount: grossLoanPayFrom1,
+        tradeAmount: tradeAmountFrom1,
+        profit: profitFrom1,
+        protocols: JSON.stringify(quoteFrom1.protocols),
+        hasProfit: bigDecimal.compareTo(profitFrom1, 0) >= 0,
+      },
     } as ArbitrageResult;
   }
 
@@ -56,14 +90,15 @@ class CryptoArbitrageService {
 
   public async getPoolRatio(poolAddress: string){
     const result = await Web3Connector.getReserves(poolAddress);
-    const poolReserveRatio = bigDecimal.divide(result.token0Reserve, result.token1Reserve, 5);
-    return poolReserveRatio;
+    const poolReserveRatioFrom0 = bigDecimal.divide(result.token0Reserve, result.token1Reserve, 5);
+    const poolReserveRatioFrom1 = bigDecimal.divide(result.token1Reserve, result.token0Reserve, 5);
+    return [poolReserveRatioFrom0, poolReserveRatioFrom1];
   }
 
   public async convertGasToToken(gasAmount: number, tokenAddress: string) {
     let amount = BigInt(Math.ceil(gasAmount * (10 ** 9)));
 
-    if(tokenAddress !== Token.BNB){
+    if(tokenAddress !== Token.WBNB){
       const result = await OneInchBinanceChainService.quote({
         fromTokenAddress: Token.BNB,
         toTokenAddress: tokenAddress,
@@ -73,6 +108,12 @@ class CryptoArbitrageService {
     }
 
     return amount;
+  }
+
+  public protocolFiler(quote: QuoteResponse){
+    if protocol length > 2 //split route
+    if protocol has ACRYPTOS -> DAI, VAI, USDT, USDC, BUSD
+    if protocol has ELIPSIS -> BUSD, USDC, USDT, DAI
   }
 }
 

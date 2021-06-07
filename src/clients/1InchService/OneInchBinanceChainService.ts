@@ -6,11 +6,12 @@ import { QuoteResponse } from "./types/QuoteResponse";
 
 class OneInchBinanceChainService extends OneInchBaseAPIService {
   private CHAIN_CODE = "56";
+  private ACCEPTED_EXCHANGES = []
 
   public async quote(params: QuoteParams) {
     const apiPath = `${this.BASE_URL}/${this.CHAIN_CODE}/quote?`
     try {
-      const result = await axios.get<QuoteResponse>(apiPath, { params: params })
+      const result = await axios.get<QuoteResponse>(apiPath, { params: { ...params, parts: 1 }})
 
 
       if(result.status !== Status.OK) {
