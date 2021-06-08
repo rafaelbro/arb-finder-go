@@ -2,6 +2,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
+ppk.ts
+
 ### Node ###
 # Logs
 logs
@@ -129,3 +131,5 @@ tmp/
 temp/
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+out
+result.csv

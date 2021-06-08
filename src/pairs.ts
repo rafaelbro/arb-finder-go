@@ -4,6 +4,8 @@ export interface Pair {
   pairPoolAddress: string;
 }
 
+16370061067567019379
+
 export const TOKEN_VALUE: Record<Token, number> = {
   [Token.CAKE]: 250,
   [Token.DAI]: 5000,

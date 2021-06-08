@@ -4,6 +4,7 @@ import Token from "../tokens";
 export interface ArbitrageResult{
   timestamp: string,
   fromToken0: {
+    runContract: boolean,
     hasProfit: boolean,
     poolRatio: string,
     fromToken: Token,
@@ -12,9 +13,11 @@ export interface ArbitrageResult{
     loanAmount: string,
     tradeAmount: string,
     profit: string,
-    protocols: string,
+    hasLiquidity: boolean,
+    protocols: OneInchProtocol[][][],
   },
   fromToken1: {
+    runContract: boolean,
     hasProfit: boolean
     poolRatio: string,
     fromToken: Token,
@@ -23,7 +26,8 @@ export interface ArbitrageResult{
     loanAmount: string,
     tradeAmount: string,
     profit: string,
-    protocols: string,
+    hasLiquidity: boolean,
+    protocols: OneInchProtocol[][][],
   }
 }
 

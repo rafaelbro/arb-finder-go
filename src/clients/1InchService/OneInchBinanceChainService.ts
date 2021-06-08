@@ -3,24 +3,24 @@ import axios from "axios";
 import OneInchBaseAPIService from './OneInchBaseAPIService';
 import { QuoteParams } from "./types/QuoteParams";
 import { QuoteResponse } from "./types/QuoteResponse";
+import Exchanges from '../../exchanges';
 
 class OneInchBinanceChainService extends OneInchBaseAPIService {
   private CHAIN_CODE = "56";
-  private ACCEPTED_EXCHANGES = []
 
   public async quote(params: QuoteParams) {
     const apiPath = `${this.BASE_URL}/${this.CHAIN_CODE}/quote?`
     try {
       const result = await axios.get<QuoteResponse>(apiPath, { params: { ...params, parts: 1 }})
 
-
       if(result.status !== Status.OK) {
-        throw new Error();
+        console.log(result);
+        throw new Error(JSON.stringify(result));
       }
 
       return result.data;
     } catch(error){
-      throw new error;
+      throw error;
     }
   }
 }

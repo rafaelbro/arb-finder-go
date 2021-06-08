@@ -3,10 +3,10 @@ import OneInchBinanceChainService from "../clients/1InchService/OneInchBinanceCh
 import { QuoteResponse } from "../clients/1InchService/types/QuoteResponse";
 import { PAIRS } from "../pairs";
 import Token from "../tokens";
-import { ArbitrageHumanReadableValues, ArbitrageResult, ArbitrageValues } from "../types/ArbitrageResult";
-
-import { abi } from "../contracts/abis/test"
+import { ArbitrageResult, ArbitrageValues } from "../types/ArbitrageResult";
 import Web3Connector from "../connectors/Web3/Web3Connector";
+import Exchanges from "../exchanges";
+import { ContractReserves } from "../connectors/Web3/Web3ConnectorTypes";
 class CryptoArbitrageService {
   public async canArbitrate(
     token0: Token,
@@ -21,17 +21,20 @@ class CryptoArbitrageService {
     const quoteFrom0 = await OneInchBinanceChainService.quote({
       fromTokenAddress: token0,
       toTokenAddress: token1,
-      amount: bigIntAmountToken0.toString()
+      amount: bigIntAmountToken0.toString(),
+      protocols: Object.keys(Exchanges).join(',')
     });
 
     const quoteFrom1 = await OneInchBinanceChainService.quote({
       fromTokenAddress: token1,
       toTokenAddress: token0,
-      amount: bigIntAmountToken1.toString()
+      amount: bigIntAmountToken1.toString(),
+      protocols: Object.keys(Exchanges).join(',')
     });
 
     const poolPair = PAIRS[token0][token1].pairPoolAddress;
-    const [poolRatioFrom0, poolRatioFrom1] = await this.getPoolRatio(poolPair);
+    const poolReserves = await Web3Connector.getReserves(poolPair);
+    const [poolRatioFrom0, poolRatioFrom1] = await this.getPoolRatio(poolReserves);
 
     const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
     const grossLoanPayFrom0 = bigDecimal.add(bigDecimal.divide(amountToken0, poolRatioFrom0, 5), bigDecimal.multiply(amountToken0, 0.004));
@@ -54,8 +57,10 @@ class CryptoArbitrageService {
         loanAmount: grossLoanPayFrom0,
         tradeAmount: tradeAmountFrom0,
         profit: profitFrom0,
-        protocols: JSON.stringify(quoteFrom0.protocols),
+        protocols: quoteFrom0.protocols,
         hasProfit: bigDecimal.compareTo(profitFrom0, 0) >= 0,
+        hasLiquidity: this.hasLiquidity(bigIntAmountToken0, BigInt(poolReserves.token0Reserve)),
+        runContract: bigDecimal.compareTo(profitFrom0, 0) >= 0 && this.hasLiquidity(bigIntAmountToken0, BigInt(poolReserves.token0Reserve)),
       },
       fromToken1: {
         fromToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token1),
@@ -65,8 +70,10 @@ class CryptoArbitrageService {
         loanAmount: grossLoanPayFrom1,
         tradeAmount: tradeAmountFrom1,
         profit: profitFrom1,
-        protocols: JSON.stringify(quoteFrom1.protocols),
+        protocols: quoteFrom1.protocols,
         hasProfit: bigDecimal.compareTo(profitFrom1, 0) >= 0,
+        hasLiquidity: this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token1Reserve)),
+        runContract: bigDecimal.compareTo(profitFrom1, 0) >= 0 && this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token1Reserve)),
       },
     } as ArbitrageResult;
   }
@@ -88,10 +95,9 @@ class CryptoArbitrageService {
     }
   }
 
-  public async getPoolRatio(poolAddress: string){
-    const result = await Web3Connector.getReserves(poolAddress);
-    const poolReserveRatioFrom0 = bigDecimal.divide(result.token0Reserve, result.token1Reserve, 5);
-    const poolReserveRatioFrom1 = bigDecimal.divide(result.token1Reserve, result.token0Reserve, 5);
+  public async getPoolRatio(poolReserves: ContractReserves){
+    const poolReserveRatioFrom0 = bigDecimal.divide(poolReserves.token0Reserve, poolReserves.token1Reserve, 5);
+    const poolReserveRatioFrom1 = bigDecimal.divide(poolReserves.token1Reserve, poolReserves.token0Reserve, 5);
     return [poolReserveRatioFrom0, poolReserveRatioFrom1];
   }
 
@@ -110,10 +116,8 @@ class CryptoArbitrageService {
     return amount;
   }
 
-  public protocolFiler(quote: QuoteResponse){
-    if protocol length > 2 //split route
-    if protocol has ACRYPTOS -> DAI, VAI, USDT, USDC, BUSD
-    if protocol has ELIPSIS -> BUSD, USDC, USDT, DAI
+  public hasLiquidity(tokenAmount: bigint, reserve: bigint): boolean{
+    return bigDecimal.compareTo(bigDecimal.divide(tokenAmount.toString(), reserve.toString(), 5), '0.01') === -1;
   }
 }
 
