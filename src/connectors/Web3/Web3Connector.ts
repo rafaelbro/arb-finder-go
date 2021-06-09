@@ -10,11 +10,13 @@ class Web3Connector {
   private PROVIDER_URL = 'https://bsc-dataseed1.binance.org:443';
 
   public async getReserves(address: string){
+    //console.time("Web3 GetReserves");
     const provider = new Web3.providers.HttpProvider(this.PROVIDER_URL);
     const web3 = new Web3(provider);
 
     const contract = new web3.eth.Contract(getReservesAbi as any, address);
     const result = await contract.methods.getReserves().call();
+    //console.timeEnd("Web3 GetReserves");
     return {
       token0Reserve: result._reserve0,
       token1Reserve: result._reserve1,
@@ -22,16 +24,16 @@ class Web3Connector {
   }
 
   public async startArbitrage(amount: bigint, routers: number[], addressList: string[]){
+    // console.time("Web3 startArbitrage");
     const provider = new Web3.providers.HttpProvider(this.PROVIDER_URL);
     const web3 = new Web3(provider);
     const account = web3.eth.accounts.privateKeyToAccount(privateKey);
-    const contractAddress = web3.utils.toChecksumAddress('0x38985C79Cb073542623339a4ab4268189f4871c8');
+    const contractAddress = web3.utils.toChecksumAddress('0x3389ee611BFC16Aaf7E604E8c13a7D985468514E');
     web3.eth.accounts.wallet.add(account);
     web3.eth.defaultAccount = account.address;
     console.log(account.address);
 
     const addressListFormat = addressList.map(addr => web3.utils.toChecksumAddress(addr));
-    console.log(`[CHAMOUUUUUUUUU] startArbitrage(${amount.toString()}, ${routers}, ${addressListFormat})`);
 
     const contractOptions = {
       from: account.address,
@@ -39,25 +41,26 @@ class Web3Connector {
       gas: 20000000,
     }
     const contract = new web3.eth.Contract(startArbitrageAbi as any, contractAddress, contractOptions);
-    const result = await contract.methods.startArbitrage(amount.toString(), routers, addressListFormat).send();
-    console.log(result);
+    if(process.env['PROD'] === 'true'){
+      const result = await contract.methods.startArbitrage(amount.toString(), routers, addressListFormat).send();
+      console.log(`[CHAMOUUUUUUUUU] startArbitrage(${amount.toString()}, ${routers}, ${addressListFormat})`);
+      console.log(JSON.stringify(result));
+    }
+    // console.timeEnd("Web3 startArbitrage");
   }
 
-  public async getRouterIn(amount: bigint, routers: number[], addressList: string[]){
+  public async getRouterIn(amount: number){
     const provider = new Web3.providers.HttpProvider(this.PROVIDER_URL);
     const web3 = new Web3(provider);
     const account = web3.eth.accounts.privateKeyToAccount(privateKey);
-    const contractAddress = web3.utils.toChecksumAddress('0x38985C79Cb073542623339a4ab4268189f4871c8');
+    const contractAddress = web3.utils.toChecksumAddress('0x3389ee611BFC16Aaf7E604E8c13a7D985468514E');
     web3.eth.accounts.wallet.add(account);
     web3.eth.defaultAccount = account.address;
 
-    const addressListFormat = addressList.map(addr => web3.utils.toChecksumAddress(addr));
-    console.log(`[CHAMOUUUUUUUUU] getRouterIn(0)`);
 
     const contract = new web3.eth.Contract(startArbitrageAbi as any, contractAddress);
-    const result = await contract.methods.getRouterIn(0).call();
-    console.log(result);
-    await sleep(10000);
+    const result = await contract.methods.getRouterIn(amount).call();
+    console.log(`getRouterIn(${amount}) = ${result}`);
   }
 }
 

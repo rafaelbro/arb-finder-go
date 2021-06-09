@@ -7,9 +7,9 @@ export interface Pair {
 16370061067567019379
 
 export const TOKEN_VALUE: Record<Token, number> = {
-  [Token.CAKE]: 250,
+  [Token.CAKE]: 150,
   [Token.DAI]: 5000,
-  [Token.ETH]: 0,
+  [Token.ETH]: 2,
   [Token.ADA]: 0,
   [Token.VAI]: 5000,
   [Token.WBNB]: 12,
@@ -20,6 +20,47 @@ export const TOKEN_VALUE: Record<Token, number> = {
 }
 
 export const PAIRS: any = {
+  [Token.CAKE]: {
+    [Token.WBNB]: {
+      pairPoolAddress: '0x0eD7e52944161450477ee417DE9Cd3a859b14fD0',
+    },
+    [Token.BUSD]: {
+      pairPoolAddress: '0x804678fa97d91B974ec2af3c843270886528a9E6',
+    },
+    [Token.VAI]: {
+      pairPoolAddress: '0x090a10634b8a6850DB6d92cbe1aA747861b11552',
+    },
+    [Token.USDT]: {
+      pairPoolAddress: '0xA39Af17CE4a8eb807E076805Da1e2B8EA7D0755b',
+    },
+  },
+  [Token.VAI]: {
+    [Token.WBNB]: {
+      pairPoolAddress: '0x3955d04E88cAa2482ab4815431e703E4d65Ec93C',
+    },
+    [Token.BUSD]: {
+      pairPoolAddress: '0x133ee93FE93320e1182923E1a640912eDE17C90C',
+    },
+    [Token.USDT]: {
+      pairPoolAddress: '0xD94FeFc80a7d10d4708b140c7210569061a7eddb',
+    }
+  },
+  [Token.USDT]: {
+    [Token.WBNB]: {
+      pairPoolAddress: '0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE',
+    },
+    [Token.BUSD]: {
+      pairPoolAddress: '0x7EFaEf62fDdCCa950418312c6C91Aef321375A00',
+    }
+  },
+  [Token.WBNB]: {
+    [Token.BUSD]: {
+      pairPoolAddress: '0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16',
+    },
+  },
+}
+
+export const PAIRS_V1: any = {
   [Token.CAKE]: {
     [Token.WBNB]: {
       pairPoolAddress: '0xA527a61703D82139F8a06Bc30097cC9CAA2df5A6',

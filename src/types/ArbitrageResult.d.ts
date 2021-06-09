@@ -13,10 +13,11 @@ export interface ArbitrageResult{
     loanAmount: string,
     tradeAmount: string,
     profit: string,
+    liquidityRatio: string,
     hasLiquidity: boolean,
     protocols: OneInchProtocol[][][],
   },
-  fromToken1: {
+  fromToken1?: {
     runContract: boolean,
     hasProfit: boolean
     poolRatio: string,
@@ -26,6 +27,7 @@ export interface ArbitrageResult{
     loanAmount: string,
     tradeAmount: string,
     profit: string,
+    liquidityRatio: string,
     hasLiquidity: boolean,
     protocols: OneInchProtocol[][][],
   }

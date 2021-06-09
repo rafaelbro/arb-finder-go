@@ -5,8 +5,8 @@ const Exchanges =  {
   WAULTSWAP: 3,
   BAKERYSWAP: 4,
   MDEX: 5,
-  ACRYPTOS: 6,
-  ELLIPSIS_FINANCE: 7,
+  // ACRYPTOS: 6,
+  // ELLIPSIS_FINANCE: 7,
 }
 
 export default Exchanges;

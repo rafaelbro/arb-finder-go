@@ -18,75 +18,71 @@ class CryptoArbitrageService {
     const bigIntAmountToken0= BigInt(amountToken0) * (10n ** 18n);
     const bigIntAmountToken1= BigInt(amountToken1) * (10n ** 18n);
 
-    const quoteFrom0 = await OneInchBinanceChainService.quote({
-      fromTokenAddress: token0,
-      toTokenAddress: token1,
-      amount: bigIntAmountToken0.toString(),
-      protocols: Object.keys(Exchanges).join(',')
-    });
-
-    const quoteFrom1 = await OneInchBinanceChainService.quote({
-      fromTokenAddress: token1,
-      toTokenAddress: token0,
-      amount: bigIntAmountToken1.toString(),
-      protocols: Object.keys(Exchanges).join(',')
-    });
-
     const poolPair = PAIRS[token0][token1].pairPoolAddress;
     const poolReserves = await Web3Connector.getReserves(poolPair);
     const [poolRatioFrom0, poolRatioFrom1] = await this.getPoolRatio(poolReserves);
 
-    const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
-    const grossLoanPayFrom0 = bigDecimal.add(bigDecimal.divide(amountToken0, poolRatioFrom0, 5), bigDecimal.multiply(amountToken0, 0.004));
-    const tradeAmountFrom0 = bigDecimal.divide(amountToken0, quoteFrom0Ratio.netRatio, 5);
-    const profitFrom0 = bigDecimal.subtract(tradeAmountFrom0, grossLoanPayFrom0);
+    OneInchBinanceChainService.quote({
+      fromTokenAddress: token0,
+      toTokenAddress: token1,
+      amount: bigIntAmountToken0.toString(),
+      protocols: Object.keys(Exchanges).join(',')
+    }).then(async (quoteFrom0) => {
+      const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
+      const grossLoanPayFrom0 = bigDecimal.multiply(bigDecimal.divide(amountToken0, poolRatioFrom0, 7), 1.01);
+      const tradeAmountFrom0 = bigDecimal.divide(amountToken0, quoteFrom0Ratio.netRatio, 7);
+      const profitFrom0 = bigDecimal.subtract(tradeAmountFrom0, grossLoanPayFrom0);
+      const hasProfitToken0 = bigDecimal.compareTo(profitFrom0, 0) >= 0
+      const liquidityToken0 = this.hasLiquidity(bigIntAmountToken0, BigInt(poolReserves.token0Reserve))
+      const hasLiquidityToken0 = bigDecimal.compareTo(liquidityToken0, '0.01') === -1;
+      const runContractToken0 = hasLiquidityToken0 && hasProfitToken0;
+
+      if(runContractToken0){
+        const amount = bigIntAmountToken0;
+        const routers = quoteFrom0.protocols[0].map((p: any) => Exchanges[p[0].name as keyof typeof Exchanges]);
+        const addressList = quoteFrom0.protocols[0].map((p: any) => p[0].toTokenAddress);
+        addressList.unshift(token0);
+
+        await Web3Connector.startArbitrage(amount, routers, addressList);
+      }
+    })
 
 
-    const quoteFrom1Ratio = await this.getQuoteRatio(quoteFrom1);
-    const grossLoanPayFrom1 = bigDecimal.add(bigDecimal.divide(amountToken1, poolRatioFrom1, 5), bigDecimal.multiply(amountToken1, 0.004));
-    const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 5);
-    const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
+    OneInchBinanceChainService.quote({
+      fromTokenAddress: token1,
+      toTokenAddress: token0,
+      amount: bigIntAmountToken1.toString(),
+      protocols: Object.keys(Exchanges).join(',')
+    }).then(async (quoteFrom1) => {
+      const quoteFrom1Ratio = await this.getQuoteRatio(quoteFrom1);
+      const grossLoanPayFrom1 = bigDecimal.multiply(bigDecimal.divide(amountToken1, poolRatioFrom1, 7), 1.01);
+      const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 7);
+      const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
+      const hasProfitToken1 = bigDecimal.compareTo(profitFrom1, 0) >= 0
+      const liquidityToken1 = this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token0Reserve))
+      const hasLiquidityToken1 = bigDecimal.compareTo(liquidityToken1, '0.01') === -1;
+      const runContractToken1 = hasLiquidityToken1 && hasProfitToken1;
 
-    return {
-      timestamp: new Date().toUTCString(),
-      fromToken0: {
-        fromToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token0),
-        toToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token1),
-        poolRatio: poolRatioFrom0,
-        quoteRatio: quoteFrom0Ratio.netRatio,
-        loanAmount: grossLoanPayFrom0,
-        tradeAmount: tradeAmountFrom0,
-        profit: profitFrom0,
-        protocols: quoteFrom0.protocols,
-        hasProfit: bigDecimal.compareTo(profitFrom0, 0) >= 0,
-        hasLiquidity: this.hasLiquidity(bigIntAmountToken0, BigInt(poolReserves.token0Reserve)),
-        runContract: bigDecimal.compareTo(profitFrom0, 0) >= 0 && this.hasLiquidity(bigIntAmountToken0, BigInt(poolReserves.token0Reserve)),
-      },
-      fromToken1: {
-        fromToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token1),
-        toToken: Object.keys(Token).find((x: any) => Token[x as keyof typeof Token] == token0),
-        poolRatio: poolRatioFrom1,
-        quoteRatio: quoteFrom1Ratio.netRatio,
-        loanAmount: grossLoanPayFrom1,
-        tradeAmount: tradeAmountFrom1,
-        profit: profitFrom1,
-        protocols: quoteFrom1.protocols,
-        hasProfit: bigDecimal.compareTo(profitFrom1, 0) >= 0,
-        hasLiquidity: this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token1Reserve)),
-        runContract: bigDecimal.compareTo(profitFrom1, 0) >= 0 && this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token1Reserve)),
-      },
-    } as ArbitrageResult;
+      if(runContractToken1){
+        const amount = bigIntAmountToken1;
+        const routers = quoteFrom1.protocols[0].map((p: any) => Exchanges[p[0].name as keyof typeof Exchanges]);
+        const addressList = quoteFrom1.protocols[0].map((p: any) => p[0].toTokenAddress);
+        addressList.unshift(token0);
+
+        await Web3Connector.startArbitrage(amount, routers, addressList);
+      }
+    });
   }
 
   public async getQuoteRatio(quote: QuoteResponse): Promise<ArbitrageValues> {
     const toToken = quote.toToken.address;
 
-    const grossRatio = bigDecimal.divide(quote.fromTokenAmount, quote.toTokenAmount, 5)
+    const grossRatio = bigDecimal.divide(quote.fromTokenAmount, quote.toTokenAmount, 7)
 
     let estimatedGas = quote.estimatedGas;
 
-    const feeInToToken = await this.convertGasToToken(estimatedGas, toToken);
-    const netRatio = bigDecimal.divide(bigDecimal.subtract(quote.fromTokenAmount, feeInToToken),  quote.toTokenAmount, 5)
+    const feeInToToken = 0 ;//await this.convertGasToToken(estimatedGas, toToken);
+    const netRatio = bigDecimal.divide(quote.fromTokenAmount, quote.toTokenAmount, 7)
 
     return {
       grosRatio: grossRatio,
@@ -96,8 +92,8 @@ class CryptoArbitrageService {
   }
 
   public async getPoolRatio(poolReserves: ContractReserves){
-    const poolReserveRatioFrom0 = bigDecimal.divide(poolReserves.token0Reserve, poolReserves.token1Reserve, 5);
-    const poolReserveRatioFrom1 = bigDecimal.divide(poolReserves.token1Reserve, poolReserves.token0Reserve, 5);
+    const poolReserveRatioFrom0 = bigDecimal.divide(poolReserves.token0Reserve, poolReserves.token1Reserve, 7);
+    const poolReserveRatioFrom1 = bigDecimal.divide(poolReserves.token1Reserve, poolReserves.token0Reserve, 7);
     return [poolReserveRatioFrom0, poolReserveRatioFrom1];
   }
 
@@ -116,8 +112,8 @@ class CryptoArbitrageService {
     return amount;
   }
 
-  public hasLiquidity(tokenAmount: bigint, reserve: bigint): boolean{
-    return bigDecimal.compareTo(bigDecimal.divide(tokenAmount.toString(), reserve.toString(), 5), '0.01') === -1;
+  public hasLiquidity(tokenAmount: bigint, reserve: bigint): string{
+    return bigDecimal.divide(tokenAmount.toString(), reserve.toString(), 7);
   }
 }
 

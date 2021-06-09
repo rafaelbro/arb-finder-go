@@ -1,5 +1,5 @@
+yarn build
 while true
 do
-  node dist/swaps.js >> result.csv
-  sleep 60
+  PROD=true node dist/swaps.js
 done
