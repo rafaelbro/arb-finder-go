@@ -30,7 +30,7 @@ class CryptoArbitrageService {
     }).then(async (quoteFrom0) => {
       const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
       const loanPayFrom0 = bigDecimal.divide(amountToken0, poolRatioFrom0, 7);
-      const grossLoanPayFrom0 = bigDecimal.multiply(loanPayFrom0, 1.01);
+      const grossLoanPayFrom0 = bigDecimal.multiply(loanPayFrom0, 1.005);
       const tradeAmountFrom0 = bigDecimal.divide(amountToken0, quoteFrom0Ratio.netRatio, 7);
       const profitFrom0 = bigDecimal.subtract(tradeAmountFrom0, grossLoanPayFrom0);
       const hasProfitToken0 = bigDecimal.compareTo(profitFrom0, 0) >= 0
@@ -64,7 +64,7 @@ class CryptoArbitrageService {
     }).then(async (quoteFrom1) => {
       const quoteFrom1Ratio = await this.getQuoteRatio(quoteFrom1);
       const loanPayFrom1 = bigDecimal.divide(amountToken1, poolRatioFrom1, 7);
-      const grossLoanPayFrom1 = bigDecimal.multiply(loanPayFrom1, 1.01);
+      const grossLoanPayFrom1 = bigDecimal.multiply(loanPayFrom1, 1.005);
       const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 7);
       const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
       const hasProfitToken1 = bigDecimal.compareTo(profitFrom1, 0) >= 0
@@ -81,7 +81,7 @@ class CryptoArbitrageService {
 
         await Web3Connector.startArbitrage(amount, routers, addressList);
 
-	
+
 	console.log(`quoteFrom1Ratio ${quoteFrom1Ratio}`);
 	console.log(`grossLoanPayFrom1: ${grossLoanPayFrom1}`);
 	console.log(`tradeAmountFrom1: ${tradeAmountFrom1}`);
