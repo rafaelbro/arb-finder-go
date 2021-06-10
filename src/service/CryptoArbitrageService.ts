@@ -29,7 +29,8 @@ class CryptoArbitrageService {
       protocols: Object.keys(Exchanges).join(',')
     }).then(async (quoteFrom0) => {
       const quoteFrom0Ratio = await this.getQuoteRatio(quoteFrom0);
-      const grossLoanPayFrom0 = bigDecimal.multiply(bigDecimal.divide(amountToken0, poolRatioFrom0, 7), 1.01);
+      const loanPayFrom0 = bigDecimal.divide(amountToken0, poolRatioFrom0, 7);
+      const grossLoanPayFrom0 = bigDecimal.multiply(loanPayFrom0, 1.01);
       const tradeAmountFrom0 = bigDecimal.divide(amountToken0, quoteFrom0Ratio.netRatio, 7);
       const profitFrom0 = bigDecimal.subtract(tradeAmountFrom0, grossLoanPayFrom0);
       const hasProfitToken0 = bigDecimal.compareTo(profitFrom0, 0) >= 0
@@ -44,7 +45,14 @@ class CryptoArbitrageService {
         addressList.unshift(token0);
 
         await Web3Connector.startArbitrage(amount, routers, addressList);
+
+	console.log(`quoteFrom0Ratio ${quoteFrom0Ratio}`);
+	console.log(`grossLoanPayFrom0: ${grossLoanPayFrom0}`);
+	console.log(`tradeAmountFrom0: ${tradeAmountFrom0}`);
+	console.log(`profitFrom0: ${profitFrom0}`);
+	console.log(`liquidityToken0: ${liquidityToken0}`);
       }
+      console.log(`from: ${token0} - to: ${token1} - loanPayFrom0: ${loanPayFrom0} - grossLoanPayFrom0 ${grossLoanPayFrom0} - tradeAmountFrom0: ${tradeAmountFrom0} - profitFrom0: ${profitFrom0}`);
     })
 
 
@@ -55,13 +63,15 @@ class CryptoArbitrageService {
       protocols: Object.keys(Exchanges).join(',')
     }).then(async (quoteFrom1) => {
       const quoteFrom1Ratio = await this.getQuoteRatio(quoteFrom1);
-      const grossLoanPayFrom1 = bigDecimal.multiply(bigDecimal.divide(amountToken1, poolRatioFrom1, 7), 1.01);
+      const loanPayFrom1 = bigDecimal.divide(amountToken1, poolRatioFrom1, 7);
+      const grossLoanPayFrom1 = bigDecimal.multiply(loanPayFrom1, 1.01);
       const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 7);
       const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
       const hasProfitToken1 = bigDecimal.compareTo(profitFrom1, 0) >= 0
       const liquidityToken1 = this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token0Reserve))
       const hasLiquidityToken1 = bigDecimal.compareTo(liquidityToken1, '0.01') === -1;
       const runContractToken1 = hasLiquidityToken1 && hasProfitToken1;
+
 
       if(runContractToken1){
         const amount = bigIntAmountToken1;
@@ -70,7 +80,15 @@ class CryptoArbitrageService {
         addressList.unshift(token0);
 
         await Web3Connector.startArbitrage(amount, routers, addressList);
+
+	
+	console.log(`quoteFrom1Ratio ${quoteFrom1Ratio}`);
+	console.log(`grossLoanPayFrom1: ${grossLoanPayFrom1}`);
+	console.log(`tradeAmountFrom1: ${tradeAmountFrom1}`);
+	console.log(`profitFrom1: ${profitFrom1}`);
+	console.log(`liquidityToken1: ${liquidityToken1}`);
       }
+      console.log(`from: ${token1} - to: ${token0} - loanPayFrom1: ${loanPayFrom1} - grossLoanPayFrom1 ${grossLoanPayFrom1} - tradeAmountFrom1: ${tradeAmountFrom1} - profitFrom1: ${profitFrom1}`);
     });
   }
 
