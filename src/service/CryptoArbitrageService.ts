@@ -19,6 +19,10 @@ class CryptoArbitrageService {
     amountToken1: number,
   ) {
 
+    const getKey = (value: string) => {
+      return Object.keys(Token).find(x => Token[x as keyof typeof Token] === value);
+    }
+
     const bigIntAmountToken0= BigInt(amountToken0) * (10n ** 18n);
     const bigIntAmountToken1= BigInt(amountToken1) * (10n ** 18n);
 
@@ -26,7 +30,7 @@ class CryptoArbitrageService {
     const poolReserves = await Web3Connector.getReserves(poolPair);
     const [poolRatioFrom0, poolRatioFrom1] = await this.getPoolRatio(poolReserves);
 
-    Web3Connector.getBlockNumber().then((block) => console.log(`from: ${token0} - to: ${token1} - block: ${block}`));
+    Web3Connector.getBlockNumber().then((block) => console.log(`[BLOCK LOG] from: ${token0} - to: ${token1} - block: ${block}`));
     OneInchBinanceChainService.quote({
       fromTokenAddress: token0,
       toTokenAddress: token1,
@@ -43,16 +47,17 @@ class CryptoArbitrageService {
       const hasLiquidityToken0 = bigDecimal.compareTo(liquidityToken0, '0.01') === -1;
       const runContractToken0 = hasLiquidityToken0 && hasProfitToken0;
 
+
       if(runContractToken0){
         const amount = bigIntAmountToken0;
         const [routers, addressList] = this.getRoutersAndPath(quoteFrom0);
 
         await Web3Connector.startArbitrage(amount, routers, addressList);
-        console.log(`[EXECUTION LOGS TOKEN0] from: ${token0} - to: ${token1} - loanPayFrom0: ${loanPayFrom0} - grossLoanPayFrom0 ${grossLoanPayFrom0} - tradeAmountFrom0: ${tradeAmountFrom0} - profitFrom0: ${profitFrom0} - gas: ${quoteFrom0.estimatedGas} - liquidity: ${liquidityToken0}`);
+        console.log(`${token0};${token1};${loanPayFrom0};${grossLoanPayFrom0};${tradeAmountFrom0};${profitFrom0};${quoteFrom0.estimatedGas};${liquidityToken0}`);
       }
     })
 
-    Web3Connector.getBlockNumber().then((block) => console.log(`from: ${token1} - to: ${token0} - block: ${block}`));
+    Web3Connector.getBlockNumber().then((block) => console.log(`[BLOCK LOG] from: ${token1} - to: ${token0} - block: ${block}`));
     OneInchBinanceChainService.quote({
       fromTokenAddress: token1,
       toTokenAddress: token0,
@@ -65,16 +70,17 @@ class CryptoArbitrageService {
       const tradeAmountFrom1 = bigDecimal.divide(amountToken1, quoteFrom1Ratio.netRatio, 7);
       const profitFrom1 = bigDecimal.subtract(tradeAmountFrom1, grossLoanPayFrom1);
       const hasProfitToken1 = bigDecimal.compareTo(profitFrom1, 0) >= 0
-      const liquidityToken1 = this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token0Reserve))
+      const liquidityToken1 = this.hasLiquidity(bigIntAmountToken1, BigInt(poolReserves.token1Reserve))
       const hasLiquidityToken1 = bigDecimal.compareTo(liquidityToken1, '0.01') === -1;
       const runContractToken1 = hasLiquidityToken1 && hasProfitToken1;
+
 
       if(runContractToken1){
         const amount = bigIntAmountToken1;
         const [routers, addressList] = this.getRoutersAndPath(quoteFrom1);
 
         await Web3Connector.startArbitrage(amount, routers, addressList);
-        console.log(`[EXECUTION LOGS TOKEN1] from: ${token1} - to: ${token0} - loanPayFrom1: ${loanPayFrom1} - grossLoanPayFrom1 ${grossLoanPayFrom1} - tradeAmountFrom1: ${tradeAmountFrom1} - profitFrom1: ${profitFrom1} - gas: ${quoteFrom1.estimatedGas} - liquidity: ${liquidityToken1}`);
+        console.log(`${token1};${token0};${loanPayFrom1};${grossLoanPayFrom1};${tradeAmountFrom1};${profitFrom1};${quoteFrom1.estimatedGas};${liquidityToken1}`);
       }
     });
   }
@@ -107,7 +113,7 @@ class CryptoArbitrageService {
 
     if(tokenAddress !== Token.WBNB){
       const result = await OneInchBinanceChainService.quote({
-        fromTokenAddress: Token.BNB,
+        fromTokenAddress: Token.WBNB,
         toTokenAddress: tokenAddress,
         amount: BigInt(Math.ceil(gasAmount * (10 ** 9))).toString()
       });
