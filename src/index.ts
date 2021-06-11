@@ -1,5 +1,3 @@
-import Web3Connector from "./connectors/Web3/Web3Connector";
-import Exchanges from "./exchanges";
 import { TOKEN_VALUE } from "./pairs";
 import CryptoArbitrageService from "./service/CryptoArbitrageService";
 import Token from "./tokens";

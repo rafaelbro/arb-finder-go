@@ -15,7 +15,7 @@ for(const token0 of token0List) {
   for(const token1 of token1List){
     console.log(`Tokens: ${getKey(token0)} --- ${getKey(token1)}`);
     console.time("start");
-    execSync(`PROD=${process.env['PROD']} node dist/index.js ${getKey(token0)} ${getKey(token1)} >> out`);
+    execSync(`ENV=${process.env['ENV']} node dist/index.js ${getKey(token0)} ${getKey(token1)} >> out`);
     console.timeEnd("start");
   }
 };

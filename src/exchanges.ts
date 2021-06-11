@@ -1,12 +1,23 @@
-const Exchanges =  {
+export const Exchanges =  [
+  'PANCAKESWAP',
+  'PANCAKESWAP_V2',
+  'APESWAP',
+  'WAULTSWAP',
+  'BAKERYSWAP',
+  'MDEX',
+  'ACRYPTOS',
+  'ELLIPSIS_FINANCE',
+]
+
+export const ExchangesMap =  {
   PANCAKESWAP: 0,
   PANCAKESWAP_V2: 1,
   APESWAP: 2,
   WAULTSWAP: 3,
   BAKERYSWAP: 4,
   MDEX: 5,
-  // ACRYPTOS: 6,
-  // ELLIPSIS_FINANCE: 7,
+  ACRYPTOS_CORE: 6,
+  ACRYPTOS_META: 7,
+  ELLIPSIS_CORE: 8,
+  ELLIPSIS_META: 9,
 }
-
-export default Exchanges;
