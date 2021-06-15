@@ -28,6 +28,7 @@ pkg/
 
 ppk.go
 bin/
+dist/
 
 # End of https://www.toptal.com/developers/gitignore/api/go
 .DS_Store

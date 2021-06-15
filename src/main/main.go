@@ -4,6 +4,7 @@ import (
 	"arb-finder/src/arbitrate"
 	"arb-finder/src/bscconnector"
 	"arb-finder/src/util"
+	"fmt"
 	"log"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,6 +21,7 @@ func main() {
 
 	blockHeadersChan := make(chan *types.Header)
 	subscription := bscconnector.SubscribeNewBlock(blockHeadersChan)
+	fmt.Println("Listening to BSC New Blocks...")
 
 	for {
 		select {
