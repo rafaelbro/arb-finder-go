@@ -6,7 +6,6 @@ import (
 	"arb-finder/src/util"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 
@@ -15,59 +14,95 @@ import (
 
 const ()
 
-func Arbitrate(token0 string, token0Amount int64, token1 string, token1Amount int64, pool string) {
+func Arbitrate(token0 string, token0Amount int64, token1 string, token1Amount int64, pool string) int64 {
 	token0AmountBig := util.ConvertToCryptoValue(token0Amount)
 	token1AmountBig := util.ConvertToCryptoValue(token1Amount)
 	reservesChan := make(chan *bscconnector.Reserve, 2)
+	fromToken0Chan := make(chan int64, 1)
+	fromToken1Chan := make(chan int64, 1)
 
 	go bscconnector.Reserves(pool, reservesChan)
 
 	// Call check for token0 to token
-	go checkArbitragePossibility(token0, token1, token0AmountBig, reservesChan, 0)
+	go checkArbitragePossibility(token0, token1, token0AmountBig, reservesChan, 0, fromToken0Chan)
 
 	// Call check for token1 to token0
-	go checkArbitragePossibility(token1, token0, token1AmountBig, reservesChan, 1)
-}
+	go checkArbitragePossibility(token1, token0, token1AmountBig, reservesChan, 1, fromToken1Chan)
 
-func checkArbitragePossibility(tokenFrom string, tokenTo string, amount *big.Int, reservesChan chan *bscconnector.Reserve, fromTokenIndex uint8) {
-	quote, _ := oneinchservice.Quote(tokenFrom, tokenTo, amount)
+	fromToken0Block := <-fromToken0Chan
+	fromToken1Block := <-fromToken1Chan
 
-	fee := new(big.Float).SetFloat64(1.045)
-	amountFloat := new(big.Float).SetInt(amount)
-	fromTokenFloat, _, _ := big.ParseFloat(quote.FromTokenAmount, 10, 7, big.ToPositiveInf)
-	toTokenFloat, _, _ := big.ParseFloat(quote.ToTokenAmount, 10, 7, big.ToPositiveInf)
-	amountRatio := big.NewFloat(0).Quo(fromTokenFloat, toTokenFloat)
-	reserves := <-reservesChan
-	var netLoanAmount, liquidity *big.Float
-	if fromTokenIndex == 0 {
-		netLoanAmount = new(big.Float).Quo(amountFloat, reserves.RationFrom0)
-		liquidity = new(big.Float).Quo(amountFloat, new(big.Float).SetInt(reserves.Reserve0))
-	} else {
-		netLoanAmount = new(big.Float).Quo(amountFloat, reserves.RationFrom1)
-		liquidity = new(big.Float).Quo(amountFloat, new(big.Float).SetInt(reserves.Reserve1))
+	if fromToken0Block != 0 {
+		return fromToken0Block
 	}
 
-	loadAmountWithFee := new(big.Float).Mul(netLoanAmount, fee)
-	tradeAmount := new(big.Float).Quo(amountFloat, amountRatio)
-	profit := new(big.Float).Sub(tradeAmount, loadAmountWithFee)
+	if fromToken1Block != 0 {
+		return fromToken1Block
+	}
+
+	return 0
+}
+
+func checkArbitragePossibility(tokenFrom string, tokenTo string, amount *big.Int, reservesChan chan *bscconnector.Reserve, fromTokenIndex uint8, responseChan chan int64) {
+	quote, err := oneinchservice.Quote(tokenFrom, tokenTo, amount)
+	if err != nil {
+		fmt.Println("1Inch Call Failed - Timed out")
+		responseChan <- int64(0)
+		return
+	}
+
+	fee := big.NewInt(10000 - (25 + 3)) // 0.25 + 0.03 = 0.28% fee
+	toTokenAmount, _ := new(big.Int).SetString(quote.ToTokenAmount, 10)
+	amountFloat := new(big.Float).SetInt(amount)
+	reserves := <-reservesChan
+
+	numerator := new(big.Int)
+	denominator := new(big.Int)
+	var liquidity *big.Float
+	if fromTokenIndex == 0 {
+		numerator.Mul(reserves.Reserve1, amount)
+		numerator.Mul(numerator, big.NewInt(10000))
+
+		denominator.Sub(reserves.Reserve0, amount)
+		denominator.Mul(denominator, fee)
+		liquidity = new(big.Float).Quo(amountFloat, new(big.Float).SetInt(reserves.Reserve0))
+	} else {
+		numerator.Mul(reserves.Reserve0, amount)
+		numerator.Mul(numerator, big.NewInt(10000))
+
+		denominator.Sub(reserves.Reserve1, amount)
+		denominator.Mul(denominator, fee)
+		liquidity = new(big.Float).Quo(amountFloat, new(big.Float).SetInt(reserves.Reserve1))
+	}
+	payableAmount := new(big.Int).Div(numerator, denominator)
+	payableAmount.Add(payableAmount, big.NewInt(1))
+
+	profit := new(big.Int).Sub(toTokenAmount, payableAmount)
 	hasProfit := profit.Sign() > 0
 	hasLiquidity := liquidity.Cmp(new(big.Float).SetFloat64(0.01)) == -1
 
 	if hasProfit && hasLiquidity {
 		routes, path, err := routersAndPath(quote)
 		if err != nil {
-			log.Println("DEU PAU NAS ROTAS %s", err)
+			fmt.Printf("DEU PAU NAS ROTAS %s\n", err)
+			responseChan <- int64(0)
 			return
 		}
 
 		if os.Getenv("RUN") == "true" {
 			bscconnector.StartArbitrage(amount, routes, *path, util.ContractAddress)
-		}
-		fmt.Printf("CHAMOUUUU StartArbitrage(%s, %s, %s) @ %d\n", amount, routes, path, bscconnector.CurrentBlock())
-		log.Printf("netLoanAmount = %s / loadAmountWithFee = %s / tradeAmount = %s / profit = %s / liquidity = %s \n",
-			netLoanAmount, loadAmountWithFee, tradeAmount, profit, liquidity)
-	}
 
+			currentBlock := bscconnector.CurrentBlock()
+			responseChan <- int64(currentBlock)
+			fmt.Printf("CHAMOUUUU StartArbitrage(%s, %s, %s) @ %d\n", amount, routes, path, currentBlock)
+		}
+		fmt.Printf("payableAmount = %s / toTokenAmount = %s / profit = %s / liquidity = %s \n",
+			payableAmount, toTokenAmount, profit, liquidity)
+		fmt.Printf("QUOTE: %s\n\n", quote)
+
+	} else {
+		responseChan <- int64(0)
+	}
 }
 
 func routersAndPath(quote *oneinchservice.QuoteResponse) (*[]*big.Int, *[]common.Address, error) {
@@ -84,14 +119,14 @@ func routersAndPath(quote *oneinchservice.QuoteResponse) (*[]*big.Int, *[]common
 		path = append(path, common.HexToAddress(protocol.ToTokenAddress))
 		if protocol.Name == "ACRYPTOS" {
 			route, err := exchangeForACryptos(&protocol)
-			if err != nil {
+			if err == nil {
 				routes = append(routes, big.NewInt(route))
 			} else {
 				hasError = err
 			}
 		} else if protocol.Name == "ELLIPSIS_FINANCE" {
 			route, err := exchangeForEllipsis(&protocol)
-			if err != nil {
+			if err == nil {
 				routes = append(routes, big.NewInt(route))
 			} else {
 				hasError = err
@@ -114,13 +149,13 @@ func exchangeForACryptos(protocol *oneinchservice.OneInchProtocol) (int64, error
 	}
 
 	if allowedTokenACryptos[protocol.FromTokenAddress] || allowedTokenACryptos[protocol.ToTokenAddress] {
-		return 255, errors.New("TOKEN NOT ALLOWED FOR ACRYPTOS")
+		if protocol.FromTokenAddress == util.Tokens["VAI"] || protocol.ToTokenAddress == util.Tokens["VAI"] {
+			return util.ExchangesMap["ACRYPTOS_META"], nil
+		}
+		return util.ExchangesMap["ACRYPTOS_CORE"], nil
 	}
 
-	if protocol.FromTokenAddress == util.Tokens["VAI"] || protocol.ToTokenAddress == util.Tokens["VAI"] {
-		return util.ExchangesMap["ACRYPTOS_META"], nil
-	}
-	return util.ExchangesMap["ACRYPTOS_CORE"], nil
+	return 254, errors.New("TOKEN NOT ALLOWED FOR ACRYPTOS")
 }
 
 func exchangeForEllipsis(protocol *oneinchservice.OneInchProtocol) (int64, error) {
@@ -132,11 +167,11 @@ func exchangeForEllipsis(protocol *oneinchservice.OneInchProtocol) (int64, error
 	}
 
 	if allowedTokenEllipsis[protocol.FromTokenAddress] || allowedTokenEllipsis[protocol.ToTokenAddress] {
-		return 255, errors.New("TOKEN NOT ALLOWED FOR ELLIPSIS")
+		if protocol.FromTokenAddress == util.Tokens["DAI"] || protocol.ToTokenAddress == util.Tokens["DAI"] {
+			return util.ExchangesMap["ELLIPSIS_META"], nil
+		}
+		return util.ExchangesMap["ELLIPSIS_CORE"], nil
 	}
 
-	if protocol.FromTokenAddress == util.Tokens["DAI"] || protocol.ToTokenAddress == util.Tokens["DAI"] {
-		return util.ExchangesMap["ELLIPSIS_META"], nil
-	}
-	return util.ExchangesMap["ELLIPSIS_CORE"], nil
+	return 255, errors.New("TOKEN NOT ALLOWED FOR ELLIPSIS")
 }

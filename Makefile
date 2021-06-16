@@ -6,3 +6,6 @@ linux:
 
 clean:
 	rm -rf dist/
+
+run:
+	go run src/main/main.go

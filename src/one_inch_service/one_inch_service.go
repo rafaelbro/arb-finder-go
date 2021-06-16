@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
@@ -42,7 +43,13 @@ func Quote(fromTokenAddress string, toTokenAddress string, amount *big.Int) (*Qu
 	url := fmt.Sprintf("%s/%s/quote?fromTokenAddress=%s&toTokenAddress=%s&amount=%s&parts=1&protocols=%s",
 		base_url, chain_code, fromTokenAddress, toTokenAddress, amount.String(), strings.Join(protocols, ","))
 
-	res, err := http.Get(url)
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	res, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
 
 	if res.StatusCode == 200 {
 		decoder := json.NewDecoder(res.Body)

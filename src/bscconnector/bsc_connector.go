@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -33,18 +32,18 @@ type Reserve struct {
 func Reserves(poolId string, reservesChan chan *Reserve) {
 	client, err := ethclient.Dial(network_url)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	poolAddress := common.HexToAddress(poolId)
 	instance, err := pancakepaircontract.NewPancakepaircontract(poolAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	result, err := instance.GetReserves(nil)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	reserve0Float := new(big.Float).SetInt(result.Reserve0)
@@ -64,34 +63,34 @@ func Reserves(poolId string, reservesChan chan *Reserve) {
 func StartArbitrage(amount *big.Int, routes *[]*big.Int, path []common.Address, contractAddress string) {
 	client, err := ethclient.Dial(network_url)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	poolAddress := common.HexToAddress(contractAddress)
 	instance, err := arbitas.NewArbitas(poolAddress, client)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	privateKey, err := crypto.HexToECDSA(PrivateKey())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("error casting public key to ECDSA")
+		fmt.Println("error casting public key to ECDSA")
 	}
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(56))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(int64(0))
@@ -99,25 +98,26 @@ func StartArbitrage(amount *big.Int, routes *[]*big.Int, path []common.Address, 
 
 	result, err := instance.StartArbitrage(auth, amount, *routes, path)
 	if err != nil {
-		log.Fatal(err)
-	}
-	if err != nil {
 		fmt.Println("FALHOU O CONTRATO")
+		fmt.Println(result.Hash())
+		fmt.Println(result)
+		fmt.Println(err)
 	} else {
 		fmt.Println("BOMBOU O CONTRATO")
-		fmt.Println(result.Data())
+		fmt.Println(result.Hash())
+		fmt.Println(result)
 	}
 }
 
 func CurrentBlock() uint64 {
 	client, err := ethclient.Dial(network_url)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	result, err := client.BlockNumber(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	if err != nil {
 		fmt.Println("FALHOU O GET BLOCK")
@@ -128,12 +128,12 @@ func CurrentBlock() uint64 {
 func SubscribeNewBlock(channel chan *types.Header) ethereum.Subscription {
 	client, err := ethclient.Dial(network_websocket)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	sub, err := client.SubscribeNewHead(context.Background(), channel)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	return sub
