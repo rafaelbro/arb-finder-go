@@ -27,7 +27,7 @@ var (
 )
 
 // ArbitasABI is the input ABI used to generate the binding from.
-const ArbitasABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_pancakeFactory\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"routers\",\"type\":\"address[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"pancakeFactory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"constant\":true},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amountBorrowed\",\"type\":\"uint256\"},{\"internalType\":\"uint256[]\",\"name\":\"routerPath\",\"type\":\"uint256[]\"},{\"internalType\":\"address[]\",\"name\":\"tokenPath\",\"type\":\"address[]\"}],\"name\":\"startArbitrage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_amount1\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"pancakeCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"routerAddress\",\"type\":\"address\"}],\"name\":\"addRouter\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRouterIn\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"routerAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"constant\":true},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const ArbitasABI = "[{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"routers\",\"type\":\"address[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"inPairAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amountBorrowed\",\"type\":\"uint256\"},{\"internalType\":\"uint256[]\",\"name\":\"routerPath\",\"type\":\"uint256[]\"},{\"internalType\":\"address[]\",\"name\":\"tokenPath\",\"type\":\"address[]\"}],\"name\":\"startArbitrage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_amount1\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"pancakeCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_amount1\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"waultSwapCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"routerAddress\",\"type\":\"address\"}],\"name\":\"addRouter\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRouterIn\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"routerAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Arbitas is an auto generated Go binding around an Ethereum contract.
 type Arbitas struct {
@@ -202,37 +202,6 @@ func (_Arbitas *ArbitasCallerSession) GetRouterIn(index *big.Int) (common.Addres
 	return _Arbitas.Contract.GetRouterIn(&_Arbitas.CallOpts, index)
 }
 
-// PancakeFactory is a free data retrieval call binding the contract method 0xe0f1c9c5.
-//
-// Solidity: function pancakeFactory() view returns(address)
-func (_Arbitas *ArbitasCaller) PancakeFactory(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _Arbitas.contract.Call(opts, &out, "pancakeFactory")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// PancakeFactory is a free data retrieval call binding the contract method 0xe0f1c9c5.
-//
-// Solidity: function pancakeFactory() view returns(address)
-func (_Arbitas *ArbitasSession) PancakeFactory() (common.Address, error) {
-	return _Arbitas.Contract.PancakeFactory(&_Arbitas.CallOpts)
-}
-
-// PancakeFactory is a free data retrieval call binding the contract method 0xe0f1c9c5.
-//
-// Solidity: function pancakeFactory() view returns(address)
-func (_Arbitas *ArbitasCallerSession) PancakeFactory() (common.Address, error) {
-	return _Arbitas.Contract.PancakeFactory(&_Arbitas.CallOpts)
-}
-
 // AddRouter is a paid mutator transaction binding the contract method 0x176e87df.
 //
 // Solidity: function addRouter(uint256 index, address routerAddress) returns()
@@ -296,23 +265,44 @@ func (_Arbitas *ArbitasTransactorSession) RenounceOwnership(newOwner common.Addr
 	return _Arbitas.Contract.RenounceOwnership(&_Arbitas.TransactOpts, newOwner)
 }
 
-// StartArbitrage is a paid mutator transaction binding the contract method 0xf181d95b.
+// StartArbitrage is a paid mutator transaction binding the contract method 0x9653a422.
 //
-// Solidity: function startArbitrage(uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
-func (_Arbitas *ArbitasTransactor) StartArbitrage(opts *bind.TransactOpts, amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
-	return _Arbitas.contract.Transact(opts, "startArbitrage", amountBorrowed, routerPath, tokenPath)
+// Solidity: function startArbitrage(address inPairAddress, uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
+func (_Arbitas *ArbitasTransactor) StartArbitrage(opts *bind.TransactOpts, inPairAddress common.Address, amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
+	return _Arbitas.contract.Transact(opts, "startArbitrage", inPairAddress, amountBorrowed, routerPath, tokenPath)
 }
 
-// StartArbitrage is a paid mutator transaction binding the contract method 0xf181d95b.
+// StartArbitrage is a paid mutator transaction binding the contract method 0x9653a422.
 //
-// Solidity: function startArbitrage(uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
-func (_Arbitas *ArbitasSession) StartArbitrage(amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
-	return _Arbitas.Contract.StartArbitrage(&_Arbitas.TransactOpts, amountBorrowed, routerPath, tokenPath)
+// Solidity: function startArbitrage(address inPairAddress, uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
+func (_Arbitas *ArbitasSession) StartArbitrage(inPairAddress common.Address, amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
+	return _Arbitas.Contract.StartArbitrage(&_Arbitas.TransactOpts, inPairAddress, amountBorrowed, routerPath, tokenPath)
 }
 
-// StartArbitrage is a paid mutator transaction binding the contract method 0xf181d95b.
+// StartArbitrage is a paid mutator transaction binding the contract method 0x9653a422.
 //
-// Solidity: function startArbitrage(uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
-func (_Arbitas *ArbitasTransactorSession) StartArbitrage(amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
-	return _Arbitas.Contract.StartArbitrage(&_Arbitas.TransactOpts, amountBorrowed, routerPath, tokenPath)
+// Solidity: function startArbitrage(address inPairAddress, uint256 amountBorrowed, uint256[] routerPath, address[] tokenPath) returns()
+func (_Arbitas *ArbitasTransactorSession) StartArbitrage(inPairAddress common.Address, amountBorrowed *big.Int, routerPath []*big.Int, tokenPath []common.Address) (*types.Transaction, error) {
+	return _Arbitas.Contract.StartArbitrage(&_Arbitas.TransactOpts, inPairAddress, amountBorrowed, routerPath, tokenPath)
+}
+
+// WaultSwapCall is a paid mutator transaction binding the contract method 0x485f3994.
+//
+// Solidity: function waultSwapCall(address _sender, uint256 _amount0, uint256 _amount1, bytes _data) returns()
+func (_Arbitas *ArbitasTransactor) WaultSwapCall(opts *bind.TransactOpts, _sender common.Address, _amount0 *big.Int, _amount1 *big.Int, _data []byte) (*types.Transaction, error) {
+	return _Arbitas.contract.Transact(opts, "waultSwapCall", _sender, _amount0, _amount1, _data)
+}
+
+// WaultSwapCall is a paid mutator transaction binding the contract method 0x485f3994.
+//
+// Solidity: function waultSwapCall(address _sender, uint256 _amount0, uint256 _amount1, bytes _data) returns()
+func (_Arbitas *ArbitasSession) WaultSwapCall(_sender common.Address, _amount0 *big.Int, _amount1 *big.Int, _data []byte) (*types.Transaction, error) {
+	return _Arbitas.Contract.WaultSwapCall(&_Arbitas.TransactOpts, _sender, _amount0, _amount1, _data)
+}
+
+// WaultSwapCall is a paid mutator transaction binding the contract method 0x485f3994.
+//
+// Solidity: function waultSwapCall(address _sender, uint256 _amount0, uint256 _amount1, bytes _data) returns()
+func (_Arbitas *ArbitasTransactorSession) WaultSwapCall(_sender common.Address, _amount0 *big.Int, _amount1 *big.Int, _data []byte) (*types.Transaction, error) {
+	return _Arbitas.Contract.WaultSwapCall(&_Arbitas.TransactOpts, _sender, _amount0, _amount1, _data)
 }

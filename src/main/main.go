@@ -32,13 +32,12 @@ func main() {
 		case header := <-blockHeadersChan:
 			if big.NewInt(executedBlock+5).Cmp(header.Number) < 0 {
 
-				token0 := util.Tokens[token0Keys[token0Idx]]
-				token1 := util.Tokens[token1Keys[token1Idx]]
-				pairPool := util.Pairs[token0Keys[token0Idx]][token1Keys[token1Idx]]
+				token0 := token0Keys[token0Idx]
+				token1 := token1Keys[token1Idx]
 				token0Amount := util.TradeQuantity[token0Keys[token0Idx]]
 				token1Amount := util.TradeQuantity[token1Keys[token1Idx]]
 
-				executedBlock = arbitrate.Arbitrate(token0, token0Amount, token1, token1Amount, pairPool)
+				executedBlock = arbitrate.Arbitrate(token0, token0Amount, token1, token1Amount)
 
 				if token0Idx+1 == len(token0Keys) {
 					token0Idx = 0

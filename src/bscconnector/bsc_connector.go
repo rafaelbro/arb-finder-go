@@ -22,6 +22,8 @@ const (
 )
 
 type Reserve struct {
+	PairRouter         string
+	PairAddress        string
 	Reserve0           *big.Int
 	Reserve1           *big.Int
 	RationFrom0        *big.Float
@@ -29,7 +31,7 @@ type Reserve struct {
 	BlockTimestampLast uint32
 }
 
-func Reserves(poolId string, reservesChan chan *Reserve) {
+func Reserves(poolId string, router string, reservesToken0Chan chan *Reserve, reservesToken1Chan chan *Reserve) {
 	client, err := ethclient.Dial(network_url)
 	if err != nil {
 		fmt.Println(err)
@@ -50,17 +52,19 @@ func Reserves(poolId string, reservesChan chan *Reserve) {
 	reserve1Float := new(big.Float).SetInt(result.Reserve1)
 
 	var reserves Reserve
+	reserves.PairRouter = router
+	reserves.PairAddress = poolId
 	reserves.Reserve0 = result.Reserve0
 	reserves.Reserve1 = result.Reserve1
 	reserves.BlockTimestampLast = result.BlockTimestampLast
 	reserves.RationFrom0 = new(big.Float).Quo(reserve0Float, reserve1Float)
 	reserves.RationFrom1 = new(big.Float).Quo(reserve1Float, reserve0Float)
 
-	reservesChan <- &reserves
-	reservesChan <- &reserves
+	reservesToken0Chan <- &reserves
+	reservesToken1Chan <- &reserves
 }
 
-func StartArbitrage(amount *big.Int, routes *[]*big.Int, path []common.Address, contractAddress string) {
+func StartArbitrage(poolPair string, amount *big.Int, routes *[]*big.Int, path []common.Address, contractAddress string) {
 	client, err := ethclient.Dial(network_url)
 	if err != nil {
 		fmt.Println(err)
@@ -95,11 +99,11 @@ func StartArbitrage(amount *big.Int, routes *[]*big.Int, path []common.Address, 
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(int64(0))
 	auth.GasPrice = big.NewInt(int64(6000000000))
+	poolPairAddress := common.HexToAddress(poolPair)
 
-	result, err := instance.StartArbitrage(auth, amount, *routes, path)
+	result, err := instance.StartArbitrage(auth, poolPairAddress, amount, *routes, path)
 	if err != nil {
 		fmt.Println("FALHOU O CONTRATO")
-		fmt.Println(result.Hash())
 		fmt.Println(result)
 		fmt.Println(err)
 	} else {

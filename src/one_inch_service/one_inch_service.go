@@ -44,7 +44,7 @@ func Quote(fromTokenAddress string, toTokenAddress string, amount *big.Int) (*Qu
 		base_url, chain_code, fromTokenAddress, toTokenAddress, amount.String(), strings.Join(protocols, ","))
 
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 3 * time.Second,
 	}
 	res, err := client.Get(url)
 	if err != nil {
