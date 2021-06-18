@@ -28,7 +28,7 @@ var ExchangesMap map[string]int64 = map[string]int64{
 	"ELLIPSIS_META":  9,
 }
 
-var ContractAddress = "0xFA714b0381fDDA77229f0C801AdF27ff2dE6F0fb"
+var ContractAddress = "0x5735f3d06c3F743BCE381a90C7fAcD1400e5A4Fa"
 
 func ConvertToCryptoValue(value int64) *big.Int {
 	landingZeros, exponent := big.NewInt(10), big.NewInt(18)
