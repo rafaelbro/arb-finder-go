@@ -99,8 +99,8 @@ func StartArbitrage(poolPair string, amount *big.Int, routes *[]*big.Int, path [
 	}
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(int64(0))
-	auth.GasLimit = 1000000
-	auth.GasPrice = big.NewInt(int64(7000000000))
+	auth.GasLimit = 10000000
+	auth.GasPrice = big.NewInt(int64(20000000000))
 	poolPairAddress := common.HexToAddress(poolPair)
 
 	result, err := instance.StartArbitrage(auth, poolPairAddress, amount, *routes, path)
