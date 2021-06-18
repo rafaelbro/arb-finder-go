@@ -23,14 +23,14 @@ func main() {
 	subscription := bscconnector.SubscribeNewBlock(blockHeadersChan)
 	fmt.Println("Listening to BSC New Blocks...")
 
-	executedBlock := int64(0)
+	executedBlock := uint64(0)
 
 	for {
 		select {
 		case err := <-subscription.Err():
 			fmt.Println(err)
 		case header := <-blockHeadersChan:
-			if big.NewInt(executedBlock+5).Cmp(header.Number) < 0 {
+			if big.NewInt(int64(executedBlock)+5).Cmp(header.Number) < 0 {
 
 				token0 := token0Keys[token0Idx]
 				token1 := token1Keys[token1Idx]

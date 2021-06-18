@@ -8,57 +8,56 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 const ()
 
-func Arbitrate(token0 string, token0Amount int64, token1 string, token1Amount int64) int64 {
+type ContractCallEvent struct {
+	PairAddress string
+	Quote       *oneinchservice.QuoteResponse
+	Amount      *big.Int
+}
+
+func Arbitrate(token0 string, token0Amount int64, token1 string, token1Amount int64) uint64 {
 	token0AmountBig := util.ConvertToCryptoValue(token0Amount)
 	token1AmountBig := util.ConvertToCryptoValue(token1Amount)
 	reservesToken0ToToken1 := make(chan *bscconnector.Reserve, 2)
 	reservesToken1ToToken0 := make(chan *bscconnector.Reserve, 2)
-	fromToken0Chan := make(chan int64, 1)
-	fromToken1Chan := make(chan int64, 1)
+	callContractChan := make(chan *ContractCallEvent, 2)
 
 	routerPoolMap := util.Pairs[token0][token1]
 	routersCount := len(routerPoolMap)
 
-	// Get Reserves for WaultSwap
 	for router, poolAddress := range routerPoolMap {
 		go bscconnector.Reserves(poolAddress, router, reservesToken0ToToken1, reservesToken1ToToken0)
 	}
 
 	// Call check for token0 to token
-	go checkArbitragePossibility(token0, token1, token0AmountBig, reservesToken0ToToken1, 0, fromToken0Chan, routersCount)
+	go checkArbitragePossibility(token0, token1, token0AmountBig, reservesToken0ToToken1, 0, callContractChan, routersCount)
 
 	// Call check for token1 to token0
-	go checkArbitragePossibility(token1, token0, token1AmountBig, reservesToken1ToToken0, 1, fromToken1Chan, routersCount)
+	go checkArbitragePossibility(token1, token0, token1AmountBig, reservesToken1ToToken0, 1, callContractChan, routersCount)
 
-	fromToken0Block := <-fromToken0Chan
-	fromToken1Block := <-fromToken1Chan
-
-	if fromToken0Block != 0 {
-		return fromToken0Block
-	}
-
-	if fromToken1Block != 0 {
-		return fromToken1Block
-	}
-
-	return 0
+	return CallContract(callContractChan)
 }
 
-func checkArbitragePossibility(tokenFrom string, tokenTo string, amount *big.Int, reservesChan chan *bscconnector.Reserve, fromTokenIndex uint8, responseChan chan int64, routerCount int) {
+func checkArbitragePossibility(tokenFrom string, tokenTo string, amount *big.Int, reservesChan chan *bscconnector.Reserve, fromTokenIndex uint8, callContractChan chan *ContractCallEvent, routerCount int) {
 	quote, err := oneinchservice.Quote(tokenFrom, tokenTo, amount)
 	if err != nil {
-		fmt.Println("1Inch Call Failed - Timed out")
-		responseChan <- int64(0)
+		fmt.Printf("1Inch Call Failed - Timed out - %d\n", fromTokenIndex)
+		callContractChan <- nil
 		return
 	}
 
-	toTokenAmount, _ := new(big.Int).SetString(quote.ToTokenAmount, 10)
+	toTokenAmount, valid := new(big.Int).SetString(quote.ToTokenAmount, 10)
+	if !valid {
+		fmt.Println("Fail to convert 1Inch ToTokenAmount")
+		callContractChan <- nil
+		return
+	}
 
 	minPayableAmount, reserveInfo := MinAmountIn(amount, fromTokenIndex, reservesChan, routerCount)
 
@@ -66,28 +65,19 @@ func checkArbitragePossibility(tokenFrom string, tokenTo string, amount *big.Int
 	hasProfit := profit.Sign() > 0
 
 	if hasProfit {
-		routes, path, err := routersAndPath(quote)
-		if err != nil {
-			fmt.Printf("DEU PAU NAS ROTAS %s\n", err)
-			responseChan <- int64(0)
-			return
-		}
+		var contractCall ContractCallEvent
+		contractCall.Amount = amount
+		contractCall.Quote = quote
+		contractCall.PairAddress = reserveInfo.PairAddress
 
-		if os.Getenv("RUN") == "true" {
-			bscconnector.StartArbitrage(reserveInfo.PairAddress, amount, routes, *path, util.ContractAddress)
-		}
+		callContractChan <- &contractCall
 
-		currentBlock := bscconnector.CurrentBlock()
-		responseChan <- int64(currentBlock)
-		fmt.Printf("CHAMOUUUU StartArbitrage(%s, %s, %s, %s) @ %d\n", reserveInfo.PairAddress, amount, routes, path, currentBlock)
 		fmt.Printf("payableAmount = %s / toTokenAmount = %s / profit = %s \n",
 			minPayableAmount, toTokenAmount, profit)
 		// fmt.Printf("QUOTE: %s\n\n", quote)
-
 	} else {
-		responseChan <- int64(0)
+		callContractChan <- nil
 	}
-
 }
 
 func routersAndPath(quote *oneinchservice.QuoteResponse) (*[]*big.Int, *[]common.Address, error) {
@@ -189,8 +179,15 @@ func MinAmountIn(amountOut *big.Int, fromTokenIndex uint8, reservesChan chan *bs
 	minAmount := big.NewInt(-1)
 	var minReserve *bscconnector.Reserve
 
+	var reserve *bscconnector.Reserve
 	for i := 0; i < int(routerCount); i++ {
-		reserve := <-reservesChan
+		select {
+		case chanValue := <-reservesChan:
+			reserve = chanValue
+		case <-time.After(3 * time.Second):
+			fmt.Println("GetReserve Timed out")
+			continue
+		}
 
 		fee := util.RouterFeeMap[reserve.PairRouter]
 		currentValue := AmountIn(amountOut, fee, reserve.Reserve1, reserve.Reserve0, fromTokenIndex)
@@ -201,4 +198,43 @@ func MinAmountIn(amountOut *big.Int, fromTokenIndex uint8, reservesChan chan *bs
 	}
 
 	return minAmount, minReserve
+}
+
+func CallContract(callContractChan chan *ContractCallEvent) uint64 {
+	var event *ContractCallEvent
+	select {
+	case e := <-callContractChan:
+		event = e
+	case <-time.After(10 * time.Second):
+		fmt.Println("Waiting arbitrage response [0]")
+		return 0
+	}
+
+	if event == nil {
+		select {
+		case e := <-callContractChan:
+			event = e
+		case <-time.After(10 * time.Second):
+			fmt.Println("Waiting arbitrage response [1]")
+			return 0
+		}
+	}
+	if event == nil {
+		return 0
+	}
+
+	routes, path, err := routersAndPath(event.Quote)
+	if err != nil {
+		fmt.Printf("DEU PAU NAS ROTAS %s\n", err)
+		return 0
+	}
+
+	if os.Getenv("RUN") == "true" {
+		bscconnector.StartArbitrage(event.PairAddress, event.Amount, routes, *path, util.ContractAddress)
+	}
+
+	currentBlock := bscconnector.CurrentBlock()
+	fmt.Printf("CHAMOUUUU StartArbitrage(%s, %s, %s, %s) @ %d\n", event.PairAddress, event.Amount, routes, path, currentBlock)
+
+	return currentBlock
 }
