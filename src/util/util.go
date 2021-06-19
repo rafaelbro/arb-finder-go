@@ -155,16 +155,16 @@ var Pairs map[string]map[string]map[string]string = map[string]map[string]map[st
 }
 
 var TradeQuantity map[string]int64 = map[string]int64{
-	Tokens["CAKE"]: 500,
-	Tokens["DAI"]:  10000,
-	Tokens["ETH"]:  4,
+	Tokens["CAKE"]: 125,
+	Tokens["DAI"]:  2000,
+	Tokens["ETH"]:  1,
 	Tokens["ADA"]:  0,
-	Tokens["VAI"]:  10000,
-	Tokens["USDT"]: 10000,
+	Tokens["VAI"]:  2000,
+	Tokens["USDT"]: 2000,
 	Tokens["BTCB"]: 1,
-	Tokens["USDC"]: 10000,
-	Tokens["WBNB"]: 25,
-	Tokens["BUSD"]: 10000,
+	Tokens["USDC"]: 2000,
+	Tokens["WBNB"]: 5,
+	Tokens["BUSD"]: 2000,
 }
 
 var RouterFeeMap map[string]int64 = map[string]int64{

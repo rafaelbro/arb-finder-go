@@ -184,7 +184,7 @@ func MinAmountIn(amountOut *big.Int, fromTokenIndex uint8, reservesChan chan *bs
 		select {
 		case chanValue := <-reservesChan:
 			reserve = chanValue
-		case <-time.After(3 * time.Second):
+		case <-time.After(700 * time.Millisecond):
 			fmt.Println("GetReserve Timed out")
 			continue
 		}
@@ -201,24 +201,25 @@ func MinAmountIn(amountOut *big.Int, fromTokenIndex uint8, reservesChan chan *bs
 }
 
 func CallContract(callContractChan chan *ContractCallEvent) uint64 {
-	var event *ContractCallEvent
+	curTime := time.Now()
+	var event *ContractCallEvent = nil
 	select {
 	case e := <-callContractChan:
 		event = e
-	case <-time.After(10 * time.Second):
+	case <-time.After(2 * time.Second):
 		fmt.Println("Waiting arbitrage response [0]")
-		return 0
 	}
 
 	if event == nil {
 		select {
 		case e := <-callContractChan:
 			event = e
-		case <-time.After(10 * time.Second):
+		case <-time.After((2010 - time.Duration((time.Since(curTime)).Milliseconds())) * time.Millisecond):
 			fmt.Println("Waiting arbitrage response [1]")
 			return 0
 		}
 	}
+
 	if event == nil {
 		return 0
 	}

@@ -6,6 +6,7 @@ import (
 	"arb-finder/src/util"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -30,15 +31,17 @@ func main() {
 		case err := <-subscription.Err():
 			fmt.Println(err)
 		case header := <-blockHeadersChan:
+			curTime := time.Now()
 			if big.NewInt(int64(executedBlock)+5).Cmp(header.Number) < 0 {
 
 				token0 := token0Keys[token0Idx]
 				token1 := token1Keys[token1Idx]
-				token0Amount := util.TradeQuantity[token0Keys[token0Idx]]
-				token1Amount := util.TradeQuantity[token1Keys[token1Idx]]
+				token0Amount := util.TradeQuantity[token0Keys[token0Idx]] * ((int64(header.Time) % 4) + 1)
+				token1Amount := util.TradeQuantity[token1Keys[token1Idx]] * ((int64(header.Time) % 4) + 1)
 
 				executedBlock = arbitrate.Arbitrate(token0, token0Amount, token1, token1Amount)
 
+				fmt.Printf("Block: %s - Start Time %s - Elapsed Time: %d ms\n", header.Number, curTime.UTC().String(), time.Since(curTime).Milliseconds())
 				if token0Idx+1 == len(token0Keys) {
 					token0Idx = 0
 					token1Idx = 0

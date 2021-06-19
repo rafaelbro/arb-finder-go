@@ -27,8 +27,6 @@ type Reserve struct {
 	PairAddress        string
 	Reserve0           *big.Int
 	Reserve1           *big.Int
-	RationFrom0        *big.Float
-	RationFrom1        *big.Float
 	BlockTimestampLast uint32
 }
 
@@ -49,17 +47,12 @@ func Reserves(poolId string, router string, reservesToken0Chan chan *Reserve, re
 		fmt.Println(err)
 	}
 
-	reserve0Float := new(big.Float).SetInt(result.Reserve0)
-	reserve1Float := new(big.Float).SetInt(result.Reserve1)
-
 	var reserves Reserve
 	reserves.PairRouter = router
 	reserves.PairAddress = poolId
 	reserves.Reserve0 = result.Reserve0
 	reserves.Reserve1 = result.Reserve1
 	reserves.BlockTimestampLast = result.BlockTimestampLast
-	reserves.RationFrom0 = new(big.Float).Quo(reserve0Float, reserve1Float)
-	reserves.RationFrom1 = new(big.Float).Quo(reserve1Float, reserve0Float)
 
 	reservesToken0Chan <- &reserves
 	reservesToken1Chan <- &reserves
@@ -99,8 +92,8 @@ func StartArbitrage(poolPair string, amount *big.Int, routes *[]*big.Int, path [
 	}
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(int64(0))
-	auth.GasLimit = 10000000
-	auth.GasPrice = big.NewInt(int64(20000000000))
+	auth.GasLimit = 1000000
+	auth.GasPrice = big.NewInt(int64(7000000000))
 	poolPairAddress := common.HexToAddress(poolPair)
 
 	result, err := instance.StartArbitrage(auth, poolPairAddress, amount, *routes, path)
