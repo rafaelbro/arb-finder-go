@@ -1,0 +1,10 @@
+[Unit]
+Description=Arbitas
+
+[Service]
+ExecStart=/home/ec2-user/main
+Restart=always
+Environment="RUN=true"
+
+[Install]
+WantedBy=multi-user.target

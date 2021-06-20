@@ -2,51 +2,55 @@
 
 ## Environment Requirements
 
-* Install NodeJS v12.X
-* Install Yarn `npm install -g yarn`
+* Install Go
 
 ## Environment Setup
 
 ### Install dependencies
 
 ```sh
-yarn install
+go mod
 ```
 
 ### Build
 
 Unix based systems:
 ```sh
-yarn build
+make build
 ```
 
-Windows:
+Building for Linux:
 ```sh
-yarn buildWindows
+make linux
 ```
 
 It will generate transpiled js files into the `dist` folder.
 
 ### Execute
 
-Run the following command providing the arguments.
-
-1. Quantity of units desired to arbitrate (Required)
-2. Ticker of source token to arbitrate (Required)
-3. Ticker of destination token to arbitrate (Required)
-4. Config to show values in a human readable way (Optional)
-
-Unix based systems:
-```sh
-yarn start <QUANTITY> <FROM_TOKEN> <TO_TOKEN> [<HUMAN_READABLE>]
-yarn start 10 BNB DAI
+```
+make run
 ```
 
-Windows
-```sh
-yarn startWindows <QUANTITY> <FROM_TOKEN> <TO_TOKEN> [<HUMAN_READABLE>]
-yarn start 10 BNB DAI
+### Server Configuration
+
+1. Create file at `/etc/systemd/system/arbitas.service`
+2. Add the Content
 ```
+[Unit]
+Description=Arbitas
+
+[Service]
+ExecStart=/home/ec2-user/main
+Restart=always
+Environment="RUN=true"
+
+[Install]
+WantedBy=multi-user.target
+```
+3. Run `sudo systemctl enable arbitas.service`
+4. Run `sudo systemctl start arbitas.service`
+5. See Logs: `journalctl -e -u arbitas.service`
 
 ## Available Tokens
 
