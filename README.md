@@ -50,7 +50,12 @@ WantedBy=multi-user.target
 ```
 3. Run `sudo systemctl enable arbitas.service`
 4. Run `sudo systemctl start arbitas.service`
-5. See Logs: `journalctl -e -u arbitas.service`
+5. See Logs: `journalctl -f -e -u arbitas.service`
+
+### Export Logs
+
+`journalctl -u arbitas.service -S -48h -o cat >> 2021-06-20.log`
+
 
 ## Available Tokens
 

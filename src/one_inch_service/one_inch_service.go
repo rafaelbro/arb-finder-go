@@ -11,7 +11,7 @@ import (
 
 const (
 	chain_code = "56"
-	base_url   = "https://api.1inch.exchange/v3.0"
+	base_url   = "https://vinicius.api.enterprise.1inch.exchange/v3.0"
 )
 
 type OneInchToken struct {
